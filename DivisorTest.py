@@ -1,5 +1,7 @@
 from psychopy import visual, core, monitors, event
 import random as rd
+from datetime import datetime as dd
+import csv
 
 def divisorTest(dotNum, divNum, testNum):
     monitor, window = setMonitorAndWindow()
@@ -26,11 +28,12 @@ def divisorTest(dotNum, divNum, testNum):
         detectEscape()
         window.flip()
 
-        result.append(['Dots: '+str(tempDotNum), 'Time: '+str(timer.getTime())])
+        result.append([tempDotNum, timer.getTime()])
 
         testCount += 1
         if testCount == testNum:
             print(result)
+            writeCSV(result)
             core.quit()     
 
 def setMonitorAndWindow():
@@ -108,5 +111,11 @@ def detectEscape():
     if event.getKeys(keyList='escape', modifiers=False, timeStamped=False):
             core.quit()
 
+def writeCSV(result):
+    schedule = str(dd.now().year)+'-'+str(dd.now().month)+'-'+str(dd.now().day)+'-'+str(dd.now().minute)+'-'+str(dd.now().second)
+    with open('./results/'+str(schedule)+'.csv', 'w') as f:
+        writer = csv.writer(f, lineterminator='\n')
+        writer.writerows(result)
+
 if __name__ == '__main__':
-    divisorTest(dotNum=41, divNum=1, testNum=10)
+    divisorTest(dotNum=41, divNum=1, testNum=2)
