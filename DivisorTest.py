@@ -1,23 +1,37 @@
 from psychopy import visual, core, monitors, event
 import random as rd
 
-def divisorTest():
+def divisorTest(dotNum, divNum, testNum):
     monitor, window = setMonitorAndWindow()
 
+    result = []
+
+    #textStart = visual.TextStim(window, text='Return >> Start', font='', pos=(0.0, 0.5), rgb=None)
+    #textStart.draw()
+    #window.flip()
+
+    proceedStep()
+    window.flip()
+
+    testCount = 0
     while True:
-        setDivisor(window, 2, 1)
-        #window.flip()
-        core.wait(1)
-        detectEscape()
+        proceedStep()
 
-        #window.flip()
-        core.wait(.05)
-        detectEscape()
-
-        setDots(window, 12, 1)
+        timer = core.Clock()
+        setDivisor(window, divNum, 4)
+        tempDotNum = setDots(window, dotNum, 4)
         window.flip()
-        core.wait(5) 
-        detectEscape()       
+
+        proceedStep()
+        detectEscape()
+        window.flip()
+
+        result.append(['Dots: '+str(tempDotNum), 'Time: '+str(timer.getTime())])
+
+        testCount += 1
+        if testCount == testNum:
+            print(result)
+            core.quit()     
 
 def setMonitorAndWindow():
     # モニター情報の設定
@@ -51,11 +65,16 @@ def setDivisor(window, divNum, flameSize):
 
     # 内枠の設定(面倒臭いので自動化とかループ最適化とかしてやせん)
     if divNum == 1:
-        print(0)
+        return
     elif divNum == 2:
         innerFlamePos = [[[0, flameSize/2], [0, -flameSize/2]], [[flameSize/2, 0], [-flameSize/2, 0]]]
     elif divNum == 4:
-        innerFlamePos = [[[0, 5], [0, -5]], [[5, 0], [-5, 0]]] #放置
+        innerFlamePos = [[[0, flameSize/2], [0, -flameSize/2]],
+                          [[flameSize/4, flameSize/2], [flameSize/4, -flameSize/2]],
+                          [[-flameSize/4, flameSize/2], [-flameSize/4, -flameSize/2]],
+                          [[flameSize/2, 0], [-flameSize/2, 0]],
+                          [[flameSize/2, flameSize/4], [-flameSize/2, flameSize/4]],
+                          [[flameSize/2, -flameSize/4], [-flameSize/2, -flameSize/4]]]
     else:
         print("KOMATTA")
         exit()
@@ -69,15 +88,25 @@ def setDivisor(window, divNum, flameSize):
 def setDots(window, dotNum, flameSize):
     dots = []
     area = flameSize/2 - flameSize/10
-    for i in range(dotNum):
+    noise = rd.randint(-5, 5)
+
+    tempNum = dotNum + noise
+    for i in range(tempNum):
         dots.append(visual.Circle(window, radius=0.05, edges=32, pos=(rd.uniform(-area, area), rd.uniform (-area, area)), lineColor='black'))
     for d in dots:
         d.draw()
 
+    return tempNum
+
+def proceedStep() :
+    while True:
+        if event.getKeys(keyList='return', modifiers=False, timeStamped=False):
+            break
+
 def detectEscape():
     # escapeを押すと一旦終了
-        if event.getKeys(keyList='escape', modifiers=False, timeStamped=False):
+    if event.getKeys(keyList='escape', modifiers=False, timeStamped=False):
             core.quit()
 
 if __name__ == '__main__':
-    divisorTest()
+    divisorTest(dotNum=41, divNum=1, testNum=10)
