@@ -1,4 +1,5 @@
 from psychopy import visual
+import numpy as np
 
 
 class Dot():
@@ -7,19 +8,22 @@ class Dot():
             win=window,
             radius=radius,
             edges=32,
-            pos=pos,
+            pos=np.array(pos),
             lineColor='black',
             units='deg'
         )
         self.circle.lineWidth = lineWidth
 
-        self.velocity       = velocity
-        self.acceleration   = acceleration
+        self.velocity       = np.array(velocity)
+        self.acceleration   = np.array(acceleration)
 
     def update(self, dt=0):
         # 加速度の概念を導入するかどうか
         # 導入するならdtに経過時間を入れる
-        self.circle.pos += self.velocity + dt*acceleration
+        print(self.circle.pos)
+        print(self.velocity)
+        print(self.acceleration)
+        self.circle.pos += self.velocity + dt*self.acceleration
         self.draw()
 
     def draw(self):

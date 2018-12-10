@@ -60,7 +60,7 @@ def experimentalProtocol():
 
         elif state == 2: # カウンティング開始後，ドット等の更新用に．
             setDivisor(window, testCombination[testCount][1], 4)
-            updateDots(dots)
+            updateDots(dots, timer.getTime())
             window.flip()
 
             if proceedStep() :
@@ -149,6 +149,7 @@ def setDivisor(window, divNum, flameSize):
         inner.draw()
 
 def setDots(window, dotNum, flameSize):
+    # ドットのセット（位置，速度，加速度）
     dots = []
     area = flameSize/2 - flameSize/10
     noise = 0
@@ -156,20 +157,20 @@ def setDots(window, dotNum, flameSize):
     # ポジション生成
     pos = [[rd.uniform(-area, area), rd.uniform (-area, area)] for i in range(dotNum)]
     # 速度設定
-    velocity = [0 for i in range(dotNum)]
+    velocity = [[.001, .001] for i in range(dotNum)]
     # 加速度設定
-    acceleration = [0 for i in range(dotNum)]
+    acceleration = [[-0.001, .001] for i in range(dotNum)]
 
     for i in range(dotNum):
-        dots.append(Dot(window, radius=0.05, lineWidth=1, pos=pos[i], velocity=[i], acceleration=acceleration[i]))
+        dots.append(Dot(window, radius=0.05, lineWidth=1, pos=pos[i], velocity=velocity[i], acceleration=acceleration[i]))
     for d in dots:
         d.draw()
 
     return dots
 
-def updateDots(dots):
+def updateDots(dots, dt):
     for ds in dots:
-        ds.draw()
+        ds.update(dt)
 
 def inputAnswer():
     while True:
