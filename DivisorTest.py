@@ -2,39 +2,99 @@ from psychopy import visual, core, monitors, event
 import random as rd
 from datetime import datetime as dd
 import csv
+import itertools as itl
 
-def divisorTest(dotNum, divNum, testNum):
+from dot import Dot
+        
+# 私はクラス縛りでもしてるの？
+def experimentalProtocol():
+    # プロトコール
+
+    # ドット数の種類
+    dotNums  = [13, 20, 27, 34, 41]
+    # ドット数に与えるノイズ幅（任意）
+    dotNoise = 1
+
+    # 分画数の種類
+    dividerNums = [1, 2, 4] # 1は分画しない
+
+    # ドット数と分画の組み合わせ
+    testCombination = []
+    for dot, div in itl.product(dotNums, dividerNums):
+        testCombination.append([dot+rd.randint(-dotNoise, dotNoise), div])
+    # 組み合わせのランダマイズ
+    rd.shuffle(testCombination)
+    #print(testCombination)
+
+    ## 以下プロトコル実行 ##
     monitor, window = setMonitorAndWindow()
 
-    result = []
-
-    #textStart = visual.TextStim(window, text='Return >> Start', font='', pos=(0.0, 0.5), rgb=None)
-    #textStart.draw()
-    #window.flip()
-
-    proceedStep()
+    textStart = visual.TextStim(window, text='Return >> Start', font='', pos=(0.0, 0.5), rgb=None)
+    textStart.draw()
     window.flip()
 
-    testCount = 0
+    # 雑〜〜〜〜
     while True:
-        proceedStep()
+        if event.getKeys(keyList='return', modifiers=False, timeStamped=False):
+            window.flip()
+            break
 
-        timer = core.Clock()
-        setDivisor(window, divNum, 4)
-        tempDotNum = setDots(window, dotNum, 4)
-        window.flip()
+    # ループプロセス
+    state = 0 # 開始は0
+    testCount = 0 # 何回めの試行か
+    result = [] # 結果の格納庫
+    answer = '' # 入力させるカウントの結果の格納庫
+    while True:
+        keys = event.getKeys()
 
-        proceedStep()
-        detectEscape()
-        window.flip()
+        if state == 0:
+            timer = core.Clock()
 
-        result.append([tempDotNum, timer.getTime()])
+            state = 1
 
-        testCount += 1
-        if testCount == testNum:
-            print(result)
-            writeCSV(result)
-            core.quit()     
+        elif state == 1: # カウンティング開始
+            setDivisor(window, testCombination[testCount][1], 4)
+            dots = setDots(window, testCombination[testCount][0], 4)
+            window.flip()
+            state = 2
+
+        elif state == 2: # カウンティング開始後，ドット等の更新用に．
+            setDivisor(window, testCombination[testCount][1], 4)
+            updateDots(dots)
+            window.flip()
+
+            if proceedStep() :
+                state = 3
+
+        elif state == 3: # カウント終了
+            textEnd = visual.TextStim(window, text='Answer the number of Dot.', font='', pos=(0.0, 0.5), rgb=None)
+            textEnd.draw()
+            textAns = visual.TextStim(window, text=answer, font='', pos=(0.0, -0.5), rgb=None)
+            textAns.draw()
+            window.flip()
+
+            if len(keys) > 0:
+                if keys[0] in [str(i) for i in range(10)]:
+                    answer += keys[0]
+
+            if len(answer) > 0:
+                if 'return' in keys:
+                    #print(answer)
+                    result.append([testCombination[testCount][0], testCombination[testCount][1], int(answer), timer.getTime()])
+                    answer = ''
+                    state = 4
+
+        elif state == 4: # 1周分の最終処理
+            testCount += 1
+            if testCount == len(testCombination):
+                break
+            
+            state = 0
+
+    print(result)
+    writeCSV(result)
+    core.quit() 
+
 
 def setMonitorAndWindow():
     # モニター情報の設定
@@ -91,20 +151,39 @@ def setDivisor(window, divNum, flameSize):
 def setDots(window, dotNum, flameSize):
     dots = []
     area = flameSize/2 - flameSize/10
-    noise = rd.randint(-5, 5)
+    noise = 0
 
-    tempNum = dotNum + noise
-    for i in range(tempNum):
-        dots.append(visual.Circle(window, radius=0.05, edges=32, pos=(rd.uniform(-area, area), rd.uniform (-area, area)), lineColor='black'))
+    # ポジション生成
+    pos = [[rd.uniform(-area, area), rd.uniform (-area, area)] for i in range(dotNum)]
+    # 速度設定
+    velocity = [0 for i in range(dotNum)]
+    # 加速度設定
+    acceleration = [0 for i in range(dotNum)]
+
+    for i in range(dotNum):
+        dots.append(Dot(window, radius=0.05, lineWidth=1, pos=pos[i], velocity=[i], acceleration=acceleration[i]))
     for d in dots:
         d.draw()
 
-    return tempNum
+    return dots
+
+def updateDots(dots):
+    for ds in dots:
+        ds.draw()
+
+def inputAnswer():
+    while True:
+        textStart = visual.TextStim(window, text='Answer the number of dots', font='', pos=(0.0, 0.5), rgb=None)
+        textStart.draw()
+        window.flip()
 
 def proceedStep() :
-    while True:
-        if event.getKeys(keyList='return', modifiers=False, timeStamped=False):
-            break
+    if event.getKeys(keyList='return', modifiers=False, timeStamped=False):
+        return True
+    elif event.getKeys(keyList='escape', modifiers=False, timeStamped=False):
+        core.quit()
+    else:
+        return False
 
 def detectEscape():
     # escapeを押すと一旦終了
@@ -112,10 +191,10 @@ def detectEscape():
             core.quit()
 
 def writeCSV(result):
-    schedule = str(dd.now().year)+'-'+str(dd.now().month)+'-'+str(dd.now().day)+'-'+str(dd.now().minute)+'-'+str(dd.now().second)
+    schedule = str(dd.now().year)+'-'+str(dd.now().month)+'-'+str(dd.now().day)+'-'+str(dd.now().hour)+'-'+str(dd.now().minute)+'-'+str(dd.now().second)
     with open('./results/'+str(schedule)+'.csv', 'w') as f:
         writer = csv.writer(f, lineterminator='\n')
         writer.writerows(result)
 
 if __name__ == '__main__':
-    divisorTest(dotNum=41, divNum=1, testNum=2)
+    experimentalProtocol()
